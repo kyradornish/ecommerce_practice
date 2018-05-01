@@ -1,6 +1,6 @@
 from app import app, db
 from flask import render_template, url_for, redirect, flash, request, session
-from app.forms import LoginForm, RegistationForm, AddProductForm, AdminManageUserForm
+from app.forms import LoginForm, RegistationForm, AddProductForm, ManageUser, AddUserForm, UpdateUserForm, DeleteUserForm
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import User, Product
 from werkzeug.urls import url_parse
@@ -20,7 +20,7 @@ TRANSACTION_SUCCESS_STATUSES = [
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', title="Home")
 
 @app.route('/login',  methods=['GET', 'POST'])
 def login():
@@ -61,12 +61,12 @@ def logout():
 @app.route('/profile')
 @login_required
 def profile():
-    return render_template('profile.html')
+    return render_template('profile.html', title="Profile")
 
 @app.route('/addproduct', methods=['GET', 'POST'])
 @login_required
 def addproduct():
-    if current_user.admin == False:
+    if current_user.admin == 0:
         redirect(url_for('index'))
         flash('You do not have access to that page. Please contact your administrator.')
     form = AddProductForm()
@@ -76,39 +76,97 @@ def addproduct():
         db.session.commit()
         flash('You successfully added {}'.format(product.name))
         return redirect(url_for('inventory'))
-    return render_template('addproduct.html', form=form)
+    return render_template('addproduct.html', form=form, title="Add Product")
 
 @app.route('/inventory', methods=['GET', 'POST'])
 @login_required
 def inventory():
-    if current_user.admin == False:
+    if current_user.admin == 0:
         redirect(url_for('index'))
         flash('You do not have access to that page. Please contact your administrator.')
     products = Product.query.all()
-    return render_template('inventory.html', products=products)
+    return render_template('inventory.html', products=products, title="Inventory")
 
 @app.route('/products', methods=['GET', 'POST'])
 def products():
     products = Product.query.all()
-    return render_template('products.html', products=products)
+    return render_template('products.html', products=products, title="Products")
 
 @app.route('/admin_manage_user', methods=['GET', 'POST'])
 @login_required
 def admin_manage_user():
-    if current_user.admin == False:
+    roles = User.query.all()
+    role = User.query.filter_by(id=current_user.id).first()
+    if current_user.admin == 0:
         redirect(url_for('index'))
         flash('You do not have access to that page. Please contact your administrator.')
-    form = AdminManageUserForm()
-    # if form.action_type.data == 'add':
+    form = ManageUser()
+    if form.validate_on_submit() and form.action.data == 'add':
+      return redirect(url_for('add_user'))
+    if form.validate_on_submit() and form.action.data == 'update':
+        return redirect(url_for('update_user'))
+    if form.validate_on_submit() and form.action.data == 'delete':
+        return redirect(url_for('delete_user'))
+    return render_template('admin.html', title="Admin Add User", form=form, roles=roles)
+    
+@app.route('/add_user', methods=['GET', 'POST'])
+@login_required
+def add_user():
+    roles = User.query.all()
+    role = User.query.filter_by(id=current_user.id).first()
+    if current_user.admin == 0:
+        redirect(url_for('index'))
+        flash('You do not have access to that page. Please contact your administrator.')
+    form = AddUserForm()
     if form.validate_on_submit():
-        user = User(first_name=form.first_name.data, last_name=form.last_name.data, email=form.email.data, username=form.username.data, admin=form.admin.data)
-        user.set_password(form.username.data)
+        user = User(first_name=form.first_name.data, last_name=form.last_name.data, email=form.email.data)
+        user.set_password(form.first_name.data)
         db.session.add(user)
         db.session.commit()
         flash('You have successfully created {} {}\'s account!'.format(user.first_name, user.last_name))
-        login_user(user)
-    return render_template('login.html', title="Admin Add User", form=form)
+        return redirect(url_for('admin_manage_user'))
+    return render_template('admin_update_user.html', title="Add User", form=form, roles=roles)
 
+@app.route('/update_user/<id>', methods=['GET', 'POST'])
+@login_required
+def update_user(id):
+    roles = User.query.all()
+    role = User.query.filter_by(id=current_user.id).first()
+    user = User.query.filter_by(id=id).first()
+    if current_user.admin == 0:
+        redirect(url_for('index'))
+        flash('You do not have access to that page. Please contact your administrator.')
+    form = UpdateUserForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(id=id).first()
+        user.first_name = form.first_name.data
+        user.last_name = form.last_name.data
+        user.email = form.email.data
+        user.admin = form.role.data
+        db.session.add(user)
+        db.session.commit()
+        flash('You have successfully updated {} {}\'s account!'.format(user.first_name, user.last_name))
+        return redirect(url_for('admin_manage_user'))
+    return render_template('admin_update_user.html', title="Update {} {}\'s Account".format(user.first_name, user.last_name), form=form, roles=roles)
+
+@app.route('/delete_user/<id>', methods=['GET', 'POST'])
+@login_required
+def delete_user(id):
+    roles = User.query.all()
+    role = User.query.filter_by(id=current_user.id).first()
+    user = User.query.filter_by(id=id).first()
+    name = user.first_name + " " + user.last_name
+    if current_user.admin == 0:
+        redirect(url_for('index'))
+        flash('You do not have access to that page. Please contact your administrator.')
+    form = DeleteUserForm()
+    if form.validate_on_submit():
+        User.query.filter_by(id=id).delete()
+        User.query.filter_by(id=id).delete()
+        db.session.commit()
+        flash('You have successfully deleted {}\'s account!'.format(name))
+        return redirect(url_for('admin_manage_user'))
+    return render_template('admin_update_user.html', title="Confirm Delete: {}".format(name), form=form, roles=roles)
 
 @app.route('/add_to_cart/<int:id>')
 def add_to_cart(id):
@@ -143,7 +201,7 @@ def clear_cart():
 @app.route('/checkouts/new', methods=['GET', 'PSOT'])
 def checkout_new():
     client_token = generate_client_token()
-    return render_template('/checkouts/new.html', client_token=client_token)
+    return render_template('/checkouts/new.html', client_token=client_token, title="Check Out")
 
 
 @app.route('/checkouts/<transaction_id>', methods=['GET'])
@@ -163,7 +221,7 @@ def show_checkout(transaction_id):
             'message': 'Your test transaction has a status of ' + transaction.status + '. See the Braintree API response and try again.'
         }
 
-    return render_template('checkouts/show.html', transaction=transaction, result=result)
+    return render_template('checkouts/show.html', transaction=transaction, result=result, title="Check Out")
 
 @app.route('/checkouts', methods=['POST'])
 def checkouts():

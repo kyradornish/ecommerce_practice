@@ -1,6 +1,8 @@
 {% extends 'bootstrap/base.html' %}
 
-{% block title %}Gem Store{% endblock %}
+{% block title %}
+{% if title %}{{ title }} | Gem Store{% endif %} 
+{% endblock %}
 
     {% block navbar %}
     <nav class="navbar navbar-default" role="navigation">
@@ -38,9 +40,6 @@
                         <li>
                             <a href="{{ url_for('inventory') }}">Inventory</a>
                         </li>
-                        <li>
-                            <a href="#">Separated link</a>
-                        </li>
                     </ul>
                 </li>
                 {% endif %}
@@ -61,23 +60,7 @@
                 </li>
                 {% if current_user.is_authenticated %}
                 <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Profile
-                        <b class="caret"></b>
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <a href="{{ url_for('profile') }}">View Profile</a>
-                        </li>
-                        <li>
-                            <a href="#">Another action</a>
-                        </li>
-                        <li>
-                            <a href="#">Something else here</a>
-                        </li>
-                        <li>
-                            <a href="#">Separated link</a>
-                        </li>
-                    </ul>
+                    <a href="{{ url_for('profile') }}">Profile</a>
                 </li>
 
                 {% else %}

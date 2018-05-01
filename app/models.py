@@ -9,7 +9,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(50), unique=True)
     email = db.Column(db.String(255), unique=True)
     password_hash = db.Column(db.String(128))
-    admin = db.Column(db.Boolean, default=False)
+    admin = db.Column(db.Integer, default=0)
     image = db.Column(db.String(255))
 
     def __repr__(self):

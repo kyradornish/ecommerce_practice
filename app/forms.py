@@ -36,11 +36,27 @@ class AddProductForm(FlaskForm):
     stock = IntegerField('Quantity in Stock', validators=[DataRequired()])
     submit = SubmitField('Add Product')
 
-class AdminManageUserForm(FlaskForm):
-    action_type = SelectField(u'Add/Delete', choices=[('add','Add User'), ('delete', 'Delete User')], validators=[DataRequired()])
+
+class ManageUser(FlaskForm):
+    action = SelectField(u'Action', choices=[('add', 'Add User'), (
+        'update', 'Update User'), ('delete', 'Delete User')], validators=[DataRequired()])
+    submit2 = SubmitField('Submit')
+
+
+class AddUserForm(FlaskForm):
+    admin = SelectField(u'Role Type', choices=[('0', 'User'), ('1', 'Admin')], validators=[DataRequired()])
     first_name = StringField('First Name', validators=[DataRequired()])
     last_name = StringField('Last Name', validators=[DataRequired()])
     email = StringField('Email', validators=[DataRequired(), Email()])
-    username = StringField('Username', validators=[DataRequired()])
-    admin = BooleanField('Admin User')
     submit = SubmitField('Register')
+
+
+class UpdateUserForm(FlaskForm):
+    role = SelectField(u'Role Type', choices=[('0', 'User'), ('1', 'Admin')], validators=[DataRequired()])
+    first_name = StringField('First Name', validators=[DataRequired()])
+    last_name = StringField('Last Name', validators=[DataRequired()])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Update')
+
+class DeleteUserForm(FlaskForm):
+    submit = SubmitField('Delete')
